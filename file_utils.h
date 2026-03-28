@@ -1,6 +1,8 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include "array_list.h"
 #define MAX_LINE_LENGTH 512
 
@@ -25,4 +27,16 @@ void skip_indents(FILE *ez_file, int layer);
 /// @brief Frees up the specified EZFile structure.
 /// @param file The structure to free.
 void free_ez_file(EZFile *file);
+
+/// @brief 
+/// @param path 
+void list_directory(const char *path);
+
+/// @brief 
+/// @param path 
+void display_file(const char *path);
+
+/// @brief 
+/// @param path 
+void handle_path(const char *path);
 #endif
