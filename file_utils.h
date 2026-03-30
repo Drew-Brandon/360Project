@@ -28,15 +28,15 @@ void skip_indents(FILE *ez_file, int layer);
 /// @param file The structure to free.
 void free_ez_file(EZFile *file);
 
-/// @brief 
-/// @param path 
+/// @brief Opens a directory and prints the names of all files and subdirectories inside it
+/// @param path the directory path
 void list_directory(const char *path);
 
-/// @brief 
-/// @param path 
+/// @brief Opens a file and prints its contents to the terminal line by line
+/// @param path A file to be read
 void display_file(const char *path);
 
-/// @brief 
+/// @brief determines whether the argument is a file or a directory
 /// @param path 
 void handle_path(const char *path);
 #endif
