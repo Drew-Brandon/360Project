@@ -16,7 +16,9 @@ DEF_ARRAY_LIST_TYPE(type, upper_name) \
 \
 void init_arr_list_##lower_name(ArrayList##upper_name *list); \
 void push_arr_list_##lower_name(ArrayList##upper_name *list, type val); \
+void push_null_arr_list_##lower_name(ArrayList##upper_name *list); \
 void insert_at_arr_list_##lower_name(ArrayList##upper_name *list, int index, type val); \
+void pop_arr_list_##lower_name(ArrayList##upper_name *list); \
 void remove_at_arr_list_##lower_name(ArrayList##upper_name *list, int index);
 
 #define DEF_ARRAY_LIST_SOURCE(type, upper_name, lower_name) \
@@ -39,6 +41,17 @@ void push_arr_list_##lower_name(ArrayList##upper_name *list, type val) \
     list->length++; \
 } \
 \
+void push_null_arr_list_##lower_name(ArrayList##upper_name *list) \
+{ \
+    if (list->length >= list->capacity) \
+    { \
+        list->capacity <<= 1; \
+        list->arr = (type *)realloc(list->arr, list->capacity * sizeof(type)); \
+    } \
+    \
+    list->length++; \
+} \
+\
 void insert_at_arr_list_##lower_name(ArrayList##upper_name *list, int index, type val) \
 { \
     if (list->length >= list->capacity) \
@@ -56,6 +69,17 @@ void insert_at_arr_list_##lower_name(ArrayList##upper_name *list, int index, typ
     list->length++; \
 } \
 \
+void pop_arr_list_##lower_name(ArrayList##upper_name *list) \
+{ \
+    list->length--; \
+    \
+    if (list->length <= list->capacity >> 1 && list->capacity > MIN_CAPACITY) \
+    { \
+        list->capacity >>= 1; \
+        list->arr = (type *)realloc(list->arr, list->capacity * sizeof(type)); \
+    } \
+} \
+\
 void remove_at_arr_list_##lower_name(ArrayList##upper_name *list, int index) \
 { \
     list->length--; \
@@ -65,7 +89,7 @@ void remove_at_arr_list_##lower_name(ArrayList##upper_name *list, int index) \
         list->arr[i] = list->arr[i + 1]; \
     } \
     \
-    if (list->length <= list->capacity >> 1) \
+    if (list->length <= list->capacity >> 1 && list->capacity > MIN_CAPACITY) \
     { \
         list->capacity >>= 1; \
         list->arr = (type *)realloc(list->arr, list->capacity * sizeof(type)); \

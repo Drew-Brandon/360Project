@@ -1,0 +1,6 @@
+file:bar.txt
+{
+    foo
+    bar
+    woop
+}
