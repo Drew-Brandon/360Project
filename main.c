@@ -1,15 +1,36 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "file_utils.h"
+#include "file_manager.h"
 
-int main(int argc, char *argv[])
+ #define EZSH_MAX_INPUT 1024 
+
+int main()
 {
-    if (argc < 2)
-    {
-        printf("Usage: %s <path>\n", argv[0]);
-        return 1;
-    }
+    char input[EZSH_MAX_INPUT];
 
-    handle_path(argv[1]);
+    while (1)
+    {
+        printf("ezsh> "); // prompt
+
+        if (!fgets(input, sizeof(input), stdin))
+            break;
+
+        // remove newline
+        input[strcspn(input, "\n")] = 0;
+
+        // exit command
+        if (strcmp(input, "exit") == 0)
+            break;
+
+        handle_command(input);
+    }
 
     return 0;
 }
+
+
+
+
+
