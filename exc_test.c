@@ -4,7 +4,7 @@
 void bar()
 {
     printf("bar\n");
-    THROW(1)
+    THROW("Test Exception")
 }
 
 void foo()
@@ -12,16 +12,14 @@ void foo()
     printf("foo\n");
 
     TRY(
-    {
         JCALL(bar())
-    }
-    else
-    {
-        printf("Error at:\n");
+    ,
+        print_exc_msg();
+        printf(":\n");
         print_exc_path();
-    })
+    )
 
-    THROW(1)
+    THROW("2nd Test Exception")
 }
 
 int main(void)
@@ -34,7 +32,8 @@ int main(void)
     }
     else
     {
-        printf("Error at:\n");
+        print_exc_msg();
+        printf(":\n");
         print_exc_path();
     })
 

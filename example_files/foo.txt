@@ -1,6 +1,9 @@
-file:bar.txt
+diry:bar
 {
-    foo
-    bar
-    woop
+    file:bar.txt
+        "foo
+        bar
+        woop"
+    file:foo.txt
+        "help"
 }
