@@ -2,7 +2,30 @@
 #define FILE_UTILS_H
 #include <stdio.h>
 #include "array_list.h"
-#define MAX_LINE_LENGTH 512
+#define OBJ_TYPE_SIZE 5
+
+/// @brief The tag that is used to represent an object being a directory in a .ez file.
+#define DIR_TAG "diry"
+
+/// @brief The tag that is used to represent an object being a file in a .ez file.
+#define FILE_TAG "file"
+
+#define MAX_FILE_NAME_SIZE 256
+#define MAX_LINE_SIZE 512
+#define MAX_CH_COUNT (sizeof(char) * 8) << 1
+#define MAX_CH_COUNT_BYTES MAX_CH_COUNT / 8
+
+DEF_ARRAY_LIST_HEADER(char, Char, ch)
+
+DEF_ARRAY_LIST_HEADER(ArrayListChar, String, str)
+
+/// @brief An enum representing the types that an object can be in a .ez file.
+enum EZObjectType
+{
+    OBJ_NONE = 0,
+    OBJ_DIRECTORY = 1,
+    OBJ_FILE = 2
+};
 
 /// @brief Stores the name, line count, and lines of a file.
 typedef struct
@@ -21,6 +44,23 @@ void indent_line(FILE *ez_file, int layer);
 /// @param ez_file The file to skip within.
 /// @param layer The amount of indents/tabs to skip.
 void skip_indents(FILE *ez_file, int layer);
+
+char peek_char(FILE *file);
+
+void skip_to_char(FILE *file, char ch);
+
+void skip_whitespace(FILE *file);
+
+ArrayListString scan_till_whitespace(FILE *file);
+
+ArrayListString scan_till_char(FILE *file, char ch, int layer);
+
+/// @brief Scans the header for an object in a .ez file.
+/// @param file The file to scan the header from.
+/// @param obj_name_size The maximum size the object's name can be.
+/// @param obj_name The string to store the name of the object in.
+/// @return The type of object that was scanned.
+enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name);
 
 /// @brief Frees up the specified EZFile structure.
 /// @param file The structure to free.
