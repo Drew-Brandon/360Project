@@ -54,51 +54,6 @@ void skip_to_char(FILE *file, char ch)
     } while (cur_ch != ch && cur_ch != EOF);
 }
 
-ArrayListString scan_till_whitespace(FILE *file)
-{
-    char cur_ch;
-    ArrayListChar *cur_line;
-    ArrayListString lines;
-    init_arr_list_str(&lines);
-    push_null_arr_list_str(&lines);
-
-    cur_line = &lines.arr[lines.length - 1];
-    init_arr_list_ch(cur_line);
-
-    while (TRUE)
-    {
-        cur_ch = fgetc(file);
-
-        if (cur_ch == '\n')
-        {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            push_null_arr_list_str(&lines);
-            cur_line = &lines.arr[lines.length - 1];
-            init_arr_list_ch(cur_line);
-        }
-        else if (isspace(cur_ch))
-        {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            pack_arr_list_str(&lines);
-            return lines;
-        }
-        else if (cur_ch == EOF)
-        {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-            THROW_FMT("The string \"%s\" has reached the end of the file.", cur_line->arr);
-        }
-        else
-        {
-            push_arr_list_ch(cur_line, cur_ch);
-        }
-    }
-}
-
 ArrayListString scan_till_char(FILE *file, char ch, int layer)
 {
     unsigned int cur_layer = layer, space_count = 0;

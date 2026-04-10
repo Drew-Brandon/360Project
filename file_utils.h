@@ -45,14 +45,25 @@ void indent_line(FILE *ez_file, int layer);
 /// @param layer The amount of indents/tabs to skip.
 void skip_indents(FILE *ez_file, int layer);
 
+/// @brief Returns the next character in the file.
+/// @param file The file to peek in.
+/// @return The next character in the file.
 char peek_char(FILE *file);
 
+/// @brief Skips to the specified character in the file.
+/// @param file The file to skip in.
+/// @param ch The character to skip to.
 void skip_to_char(FILE *file, char ch);
 
+/// @brief Skips the whitespace in the file.
+/// @param file The file to skip in.
 void skip_whitespace(FILE *file);
 
-ArrayListString scan_till_whitespace(FILE *file);
-
+/// @brief Scans lines until the specified character is reached.
+/// @param file The file to scan through.
+/// @param ch The character to stop scanning at.
+/// @param layer The layer to scan in. This refers to the amount of tab indents should be present for the text.
+/// @return The lines that were scanned in.
 ArrayListString scan_till_char(FILE *file, char ch, int layer);
 
 /// @brief Scans the header for an object in a .ez file.
