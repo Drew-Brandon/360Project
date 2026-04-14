@@ -98,7 +98,9 @@ void scan_file(FILE *in, FILE *out, char *fname, int layer)
         fputc('\n', out);
         indent_line(out, layer + 1);
         fputs(lines.arr[i].arr, out);
+        free(lines.arr[i].arr);
     }
     
+    free(lines.arr);
     fputs("\"\n", out);
 }
