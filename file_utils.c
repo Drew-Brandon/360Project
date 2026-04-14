@@ -247,8 +247,6 @@ VNode *scan_file_node(FILE *in, char *fname, VNode *parent)
     // Move to opening quote
     skip_to_char(in, '\"');  // already consumes the quote
 
-    // ✅ DO NOT call fgetc here
-
     JCALL(ArrayListString lines =
         scan_till_char(in, '\"', 0));
 
