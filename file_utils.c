@@ -1,13 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "boolean.h"
 #include "file_utils.h"
+#include "boolean.h"
 #include "journaling.h"
-
-DEF_ARRAY_LIST_SOURCE(char, Char, ch)
-
-DEF_ARRAY_LIST_SOURCE(ArrayListChar, String, str)
 
 void indent_line(FILE *ez_file, int layer)
 {

@@ -1,7 +1,7 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 #include <stdio.h>
-#include "array_list.h"
+#include "str_utils.h"
 #define OBJ_TYPE_SIZE 5
 
 /// @brief The tag that is used to represent an object being a directory in a .ez file.
@@ -14,10 +14,6 @@
 #define MAX_LINE_SIZE 512
 #define MAX_CH_COUNT (sizeof(char) * 8) << 1
 #define MAX_CH_COUNT_BYTES MAX_CH_COUNT / 8
-
-DEF_ARRAY_LIST_HEADER(char, Char, ch)
-
-DEF_ARRAY_LIST_HEADER(ArrayListChar, String, str)
 
 /// @brief An enum representing the types that an object can be in a .ez file.
 enum EZObjectType

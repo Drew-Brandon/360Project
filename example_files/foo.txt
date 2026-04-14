@@ -1,9 +1,13 @@
 diry:bar
 {
-    file:bar.txt
-        "foo
-        bar
-        woop"
-    file:foo.txt
-        "help"
+	file:bar.txt
+		"foo
+		bar
+		woop"
+	diry:mydir
+	{
+		file:joe.txt
+            "Joe is cool
+            Joe is dough"
+	}
 }

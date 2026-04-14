@@ -1,9 +1,2 @@
 diry:bar
 {
-	file:bar.txt
-		"foo
-		bar
-		woop"
-	file:foo.txt
-		"help"
-}

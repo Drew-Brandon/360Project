@@ -66,6 +66,11 @@ void push_null_arr_list_##snake_name(ArrayList##pascal_name *list) \
 \
 void insert_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index, type val) \
 { \
+    if (index < 0 || index > list->length) \
+    { \
+        THROW_FMT("The insertion index %d was out of the list's bounds (0-%d).", index, list->length); \
+    } \
+    \
     if (list->length >= list->capacity) \
     { \
         list->capacity <<= 1; \
@@ -83,6 +88,12 @@ void insert_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index, ty
 \
 void pop_arr_list_##snake_name(ArrayList##pascal_name *list) \
 { \
+    if (list->length < 0) \
+    { \
+        THROW("Cannot pop a value off an empty list."); \
+        return; \
+    } \
+    \
     list->length--; \
     \
     if (list->length <= list->capacity >> 1 && list->capacity > MIN_CAPACITY) \
@@ -94,6 +105,12 @@ void pop_arr_list_##snake_name(ArrayList##pascal_name *list) \
 \
 void remove_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index) \
 { \
+    if (list->length < 0) \
+    { \
+        THROW("Cannot remove a value from an empty list."); \
+        return; \
+    } \
+    \
     list->length--; \
     \
     for (int i = index; i < list->length; i++) \

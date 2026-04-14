@@ -49,16 +49,10 @@ void scan_ez_file(FILE *in, FILE *out, int layer)
         skip_whitespace(in);
         JCALL(enum EZObjectType obj_type = scan_header(in, MAX_FILE_NAME_SIZE, obj_name));
 
-        switch (obj_type)
+        if (obj_type == OBJ_DIRECTORY)
         {
-            case OBJ_DIRECTORY:
-                printf("Scanning directory: %s\n", obj_name);
-                JCALL(scan_dir(in, out, obj_name, layer));
-                break;
-            case OBJ_FILE:
-                printf("Scanning file: %s\n", obj_name);
-                JCALL(scan_file(in, out, obj_name, layer));
-                break;
+            printf("Scanning directory: %s\n", obj_name);
+            JCALL(scan_dir(in, out, obj_name, layer));
         }
     }
 }
@@ -92,7 +86,9 @@ void scan_file(FILE *in, FILE *out, char *fname, int layer)
         fputc('\n', out);
         indent_line(out, layer + 1);
         fputs(lines.arr[i].arr, out);
+        free(lines.arr[i].arr);
     }
     
+    free(lines.arr);
     fputs("\"\n", out);
 }
