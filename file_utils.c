@@ -4,6 +4,7 @@
 #include "boolean.h"
 #include "file_utils.h"
 #include "journaling.h"
+#include "vfs.h"
 
 DEF_ARRAY_LIST_SOURCE(char, Char, ch)
 
@@ -56,10 +57,13 @@ void skip_to_char(FILE *file, char ch)
 
 ArrayListString scan_till_char(FILE *file, char ch, int layer)
 {
-    unsigned int cur_layer = layer, space_count = 0;
+    unsigned int cur_layer = 0;   // start at 0
+    unsigned int space_count = 0;
     char cur_ch;
+
     ArrayListChar *cur_line;
     ArrayListString lines;
+
     init_arr_list_str(&lines);
     push_null_arr_list_str(&lines);
 
@@ -70,24 +74,24 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
     {
         cur_ch = fgetc(file);
 
-        switch (cur_ch)
+        // Handle EOF
+        if (cur_ch == EOF)
         {
-        case EOF:
             push_arr_list_ch(cur_line, '\0');
             pack_arr_list_ch(cur_line);
+
             THROW_FMT("The string \"%s\" has reached the end of the file.", cur_line->arr);
-        
-        case '\t':
-            if (cur_layer < layer)
+        }
+
+        // Handle indentation BEFORE processing character
+        if (cur_layer < layer)
+        {
+            if (cur_ch == '\t')
             {
                 cur_layer++;
                 continue;
             }
-
-            break;
-        
-        case ' ':
-            if (cur_layer < layer)
+            else if (cur_ch == ' ')
             {
                 space_count++;
 
@@ -96,23 +100,32 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
                     cur_layer++;
                     space_count = 0;
                 }
-
                 continue;
             }
+            else
+            {
+                // Hit non-indent char → stop indent tracking
+                cur_layer = layer;
+            }
+        }
 
-            break;
-        
-        case '\n':
+        // Newline handling
+        if (cur_ch == '\n')
+        {
             cur_layer = 0;
+            space_count = 0;
+
             push_arr_list_ch(cur_line, '\0');
             pack_arr_list_ch(cur_line);
 
             push_null_arr_list_str(&lines);
             cur_line = &lines.arr[lines.length - 1];
             init_arr_list_ch(cur_line);
+
             continue;
         }
-        
+
+        // End condition
         if (cur_ch == ch)
         {
             push_arr_list_ch(cur_line, '\0');
@@ -121,10 +134,9 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
             pack_arr_list_str(&lines);
             return lines;
         }
-        else
-        {
-            push_arr_list_ch(cur_line, cur_ch);
-        }
+
+        // Normal character
+        push_arr_list_ch(cur_line, cur_ch);
     }
 }
 
@@ -161,4 +173,87 @@ void free_ez_file(EZFile *file)
     }
 
     free(file->lines);
+}
+
+VNode *build_ez_tree(FILE *in)
+{
+    char name[MAX_FILE_NAME_SIZE];
+
+    JCALL(enum EZObjectType type = scan_header(in, MAX_FILE_NAME_SIZE, name));
+
+    if (type != OBJ_DIRECTORY)
+    {
+        THROW("Root must be a directory");
+    }
+
+    return scan_dir_node(in, name, NULL);
+}
+
+VNode *scan_dir_node(FILE *in, char *dname, VNode *parent)
+{
+    VNode *dir = create_dir(dname, parent);
+
+    // Move to '{'
+    JCALL(skip_to_char(in, '{'));
+    fgetc(in); // consume '{'
+
+    char obj_name[MAX_FILE_NAME_SIZE];
+
+    while (TRUE)
+    {
+        skip_whitespace(in);
+
+        char next = peek_char(in);
+
+        // End of directory
+        if (next == '}' || next == EOF)
+        {
+            fgetc(in); // consume '}'
+            break;
+        }
+
+        // Read object header
+        JCALL(enum EZObjectType obj_type =
+            scan_header(in, MAX_FILE_NAME_SIZE, obj_name));
+
+        VNode *child = NULL;
+
+        switch (obj_type)
+        {
+        case OBJ_DIRECTORY:
+            child = scan_dir_node(in, obj_name, dir);
+            break;
+
+        case OBJ_FILE:
+            child = scan_file_node(in, obj_name, dir);
+            break;
+
+        default:
+            THROW("Unknown object type");
+        }
+
+        // Push child into directory
+        push_arr_list_vnode_ptr(&dir->dir.children, child);
+
+    }
+
+    return dir;
+}
+
+VNode *scan_file_node(FILE *in, char *fname, VNode *parent)
+{
+    VNode *file = create_file(fname, parent);
+
+    // Move to opening quote
+    skip_to_char(in, '\"');  // already consumes the quote
+
+    // ✅ DO NOT call fgetc here
+
+    JCALL(ArrayListString lines =
+        scan_till_char(in, '\"', 0));
+
+    file->file.lines = lines.arr;
+    file->file.nlines = lines.length;
+
+    return file;
 }
