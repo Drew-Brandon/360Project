@@ -27,8 +27,13 @@ void skip_indents(FILE *ez_file, int layer)
 
 char peek_char(FILE *file)
 {
-    char ch = getc(file);
-    fseek(file, -1, SEEK_CUR);
+    char ch = fgetc(file);
+
+    if (ch != EOF)
+    {
+        fseek(file, -1L, SEEK_CUR);
+    }
+    
     return ch;
 }
 
@@ -39,7 +44,12 @@ void skip_whitespace(FILE *file)
     do
     {
         cur_ch = fgetc(file);
-    } while (isspace(cur_ch) && cur_ch != EOF);
+
+        if (cur_ch == EOF)
+        {
+            return;
+        }
+    } while (isspace(cur_ch));
 
     fseek(file, -1L, SEEK_CUR);
 }

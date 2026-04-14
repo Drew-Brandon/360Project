@@ -40,9 +40,10 @@ void scan_ez_file(FILE *in, FILE *out, int layer)
     while (TRUE)
     {
         skip_whitespace(in);
-
+        
         if (peek_char(in) == '}' || peek_char(in) == EOF)
         {
+            fgetc(in);
             break;
         }
 
@@ -65,12 +66,17 @@ void scan_ez_file(FILE *in, FILE *out, int layer)
 
 void scan_dir(FILE *in, FILE *out, char *dname, int layer)
 {
+    indent_line(out, layer);
     fprintf(out, "diry:%s\n", dname);
     skip_to_char(in, '{');
     fgetc(in);
 
+    indent_line(out, layer);
     fputs("{\n", out);
+    
     JCALL(scan_ez_file(in, out, layer + 1));
+
+    indent_line(out, layer);
     fputs("}\n", out);
 }
 
