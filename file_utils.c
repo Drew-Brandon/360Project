@@ -172,3 +172,57 @@ void free_ez_file(EZFile *file)
 
     free(file->lines);
 }
+
+void upload_file(FILE *ez_out, const char *real_path, const char *virtual_name, int layer)
+{
+    FILE *in = fopen(real_path, "r");
+
+    if (!in)
+    {
+        THROW_FMT("Failed to open file: %s", real_path);
+    }
+
+    indent_line(ez_out, layer);
+    fprintf(ez_out, "file:%s\n", virtual_name);
+
+    indent_line(ez_out, layer + 1);
+    fputs("\"", ez_out);
+
+    char buffer[1024];
+    int first_line = 1;
+
+    while (fgets(buffer, sizeof(buffer), in))
+    {
+        // Remove trailing newline (optional)
+        buffer[strcspn(buffer, "\n")] = '\0';
+
+        if (!first_line)
+        {
+            fputc('\n', ez_out);
+            indent_line(ez_out, layer + 1);
+        }
+
+        fputs(buffer, ez_out);
+        first_line = 0;
+    }
+
+    fputs("\"\n", ez_out);
+
+    fclose(in);
+}
+
+void upload_into_dir(FILE *ez_out, const char *dir_name, int layer)
+{
+    indent_line(ez_out, layer);
+    fprintf(ez_out, "diry:%s\n", dir_name);
+
+    indent_line(ez_out, layer);
+    fputs("{\n", ez_out);
+
+    // Example uploads
+    upload_file(ez_out, "real_files/a.txt", "a.txt", layer + 1);
+    upload_file(ez_out, "real_files/b.txt", "b.txt", layer + 1);
+
+    indent_line(ez_out, layer);
+    fputs("}\n", ez_out);
+}

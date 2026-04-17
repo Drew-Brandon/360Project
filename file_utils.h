@@ -2,6 +2,7 @@
 #define FILE_UTILS_H
 #include <stdio.h>
 #include "array_list.h"
+
 #define OBJ_TYPE_SIZE 5
 
 /// @brief The tag that is used to represent an object being a directory in a .ez file.
@@ -76,4 +77,19 @@ enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name);
 /// @brief Frees up the specified EZFile structure.
 /// @param file The structure to free.
 void free_ez_file(EZFile *file);
+/// @brief  Uploads a file to a .ez file with the specified virtual name and indentation layer.
+/// @param ez_out The .ez file to upload to.
+/// @param real_path The path to the file to upload.
+/// @param virtual_name The name to give the file within the .ez file. This is not required to be the same as the real name of the file, but it must be unique within the .ez file. It also cannot contain any spaces or tabs.
+/// @param layer The indentation layer to upload the file at. This refers to the amount of tab indents that should be before the file's header in the .ez file.
+void upload_file(FILE *ez_out, const char *real_path, const char *virtual_name, int layer);
+
+/// @brief Uploads a directory to a .ez file with the specified indentation layer. The directory is uploaded recursively, so all subdirectories and files within the directory are also uploaded.
+/// @param ez_out The .ez file to upload to.
+/// @param path The path to the directory to upload.
+/// @param layer The indentation layer to upload the directory at. This refers to the amount of tab indents that should be before the directory's header in the .ez file.
+void upload_directory(FILE *ez_out, const char *path, int layer);
+
+
 #endif
+
