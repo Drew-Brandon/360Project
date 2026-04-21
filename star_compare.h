@@ -1,0 +1,1 @@
+int star_compare(const char* search_term, const char* searched_text);
