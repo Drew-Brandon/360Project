@@ -1,1 +1,0 @@
-int star_contains(const char* search_term, const char* searched_text);
