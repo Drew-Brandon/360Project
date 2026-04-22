@@ -1,4 +1,4 @@
-#include "star_comp.h"
+#include "star_compare.h"
 
 int star_compare(const char* search_term, const char* searched_text)
 {
@@ -20,7 +20,7 @@ int star_compare(const char* search_term, const char* searched_text)
 			// if we only searched for the first appearance of search_term's char after the * (b), we would continue
 			// comparing and return false after bc because a != c, but if we continue until the next appearance of a,
 			// we can find ba which will eventually return true as they both reach the end of their strings
-			if (*searched_text == *search_term && star_contains(search_term, searched_text)) return 1;
+			if (*searched_text == *search_term && star_compare(search_term, searched_text)) return 1;
 			searched_text++;
 		}
 
@@ -37,5 +37,5 @@ int star_compare(const char* search_term, const char* searched_text)
 	// check current char match if we are not at the end of either string
 	if (*search_term != *searched_text) return 0;
 
-	return star_contains(search_term + 1, searched_text + 1);
+	return star_compare(search_term + 1, searched_text + 1);
 }
