@@ -133,6 +133,19 @@ void print_path(VNode *node)
     printf("/%s", node->name);
 }
 
+void cmd_save(VFS *vfs, char *save_file)
+{
+    FILE *file = fopen(save_file, "w");
+
+    if (!file)
+    {
+        THROW_FMT("Couldn't open file at location \"%s\"", save_file);
+    }
+
+    print_dir_node(file, vfs->root, 0);
+    fclose(file);
+}
+
 void run_shell(VFS *vfs)
 {
     char input[128];
@@ -164,6 +177,11 @@ void run_shell(VFS *vfs)
         {
             print_path(vfs->cwd);
             printf("\n");
+        }
+        else if (strcmp(cmd, "save") == 0)
+        {
+            char *arg = strtok(NULL, " \n");
+            if (arg) cmd_save(vfs, arg);
         }
         else if (strcmp(cmd, "exit") == 0)
         {

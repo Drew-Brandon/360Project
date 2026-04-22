@@ -27,14 +27,6 @@ enum EZObjectType
     OBJ_FILE = 2
 };
 
-/// @brief Stores the name, line count, and lines of a file.
-typedef struct
-{
-    int nlines;
-    char *name;
-    char **lines;
-} EZFile;
-
 /// @brief Indents a line by a certain amount with tabs.
 /// @param ez_file The file to indent within.
 /// @param layer The amount of tabs to indent with.
@@ -73,9 +65,8 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer);
 /// @return The type of object that was scanned.
 enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name);
 
-/// @brief Frees up the specified EZFile structure.
-/// @param file The structure to free.
-void free_ez_file(EZFile *file);
+void print_strings_to(FILE *file, ArrayListString strings, int layer);
+
 // VFS tree building
 struct VNode;  // forward declaration
 
@@ -89,14 +80,17 @@ struct VNode *build_ez_tree(FILE *in);
 /// @param name The name of the directory.
 /// @param parent The parent of the directory. Can be NULL if this is the root directory.
 /// @return The scanned directory node.
-struct VNode *scan_dir_node(FILE *in, char *name, struct VNode *parent);
+struct VNode *scan_dir_node(FILE *in, char *name, struct VNode *parent, int layer);
 
 /// @brief Scans a file node from a .ez file.
 /// @param in The file to scan the node from.
 /// @param name The name of the file.
 /// @param parent The parent of the file. Can be NULL if this is the root directory
 /// @return The scanned file node.
-struct VNode *scan_file_node(FILE *in, char *name, struct VNode *parent);
+struct VNode *scan_file_node(FILE *in, char *name, struct VNode *parent, int layer);
 
+void print_dir_node(FILE *out, struct VNode *node, int layer);
+
+void print_file_node(FILE *out, struct VNode *node, int layer);
 
 #endif

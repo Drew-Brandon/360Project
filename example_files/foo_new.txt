@@ -6,4 +6,14 @@ diry:bar
 		woop"
 	file:foo.txt
 		"help"
+	diry:subdir
+	{
+		diry:subdir2
+		{
+			file:gum.txt
+				"MMMMMMMMMMMMMMMMMMMMMMM GUM"
+		}
+		file:dog.txt
+			"Imma dog, bark bark!"
+	}
 }

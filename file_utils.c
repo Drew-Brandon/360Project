@@ -29,7 +29,12 @@ void skip_indents(FILE *ez_file, int layer)
 char peek_char(FILE *file)
 {
     char ch = getc(file);
-    fseek(file, -1, SEEK_CUR);
+
+    if (ch != EOF)
+    {
+        fseek(file, -1, SEEK_CUR);
+    }
+    
     return ch;
 }
 
@@ -40,7 +45,12 @@ void skip_whitespace(FILE *file)
     do
     {
         cur_ch = fgetc(file);
-    } while (isspace(cur_ch) && cur_ch != EOF);
+
+        if (cur_ch == EOF)
+        {
+            return;
+        }
+    } while (isspace(cur_ch));
 
     fseek(file, -1L, SEEK_CUR);
 }
@@ -100,6 +110,7 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
                     cur_layer++;
                     space_count = 0;
                 }
+
                 continue;
             }
             else
@@ -165,16 +176,6 @@ enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name)
     return obj_type;
 }
 
-void free_ez_file(EZFile *file)
-{
-    for (int i = 0; i < file->nlines; i++)
-    {
-        free(file->lines[i]);
-    }
-
-    free(file->lines);
-}
-
 VNode *build_ez_tree(FILE *in)
 {
     char name[MAX_FILE_NAME_SIZE];
@@ -186,10 +187,10 @@ VNode *build_ez_tree(FILE *in)
         THROW("Root must be a directory");
     }
 
-    return scan_dir_node(in, name, NULL);
+    return scan_dir_node(in, name, NULL, 0);
 }
 
-VNode *scan_dir_node(FILE *in, char *dname, VNode *parent)
+VNode *scan_dir_node(FILE *in, char *dname, VNode *parent, int layer)
 {
     VNode *dir = create_dir(dname, parent);
 
@@ -221,11 +222,11 @@ VNode *scan_dir_node(FILE *in, char *dname, VNode *parent)
         switch (obj_type)
         {
         case OBJ_DIRECTORY:
-            child = scan_dir_node(in, obj_name, dir);
+            child = scan_dir_node(in, obj_name, dir, layer + 1);
             break;
 
         case OBJ_FILE:
-            child = scan_file_node(in, obj_name, dir);
+            child = scan_file_node(in, obj_name, dir, layer + 1);
             break;
 
         default:
@@ -240,7 +241,7 @@ VNode *scan_dir_node(FILE *in, char *dname, VNode *parent)
     return dir;
 }
 
-VNode *scan_file_node(FILE *in, char *fname, VNode *parent)
+VNode *scan_file_node(FILE *in, char *fname, VNode *parent, int layer)
 {
     VNode *file = create_file(fname, parent);
 
@@ -248,10 +249,74 @@ VNode *scan_file_node(FILE *in, char *fname, VNode *parent)
     skip_to_char(in, '\"');  // already consumes the quote
 
     JCALL(ArrayListString lines =
-        scan_till_char(in, '\"', 0));
+        scan_till_char(in, '\"', layer + 1));
 
     file->file.lines = lines.arr;
     file->file.nlines = lines.length;
 
     return file;
+}
+
+void print_dir_node(FILE *out, struct VNode *node, int layer)
+{
+    if (node->type != OBJ_DIRECTORY)
+    {
+        printf("Not a directory\n");
+        return;
+    }
+
+    indent_line(out, layer);
+    fprintf(out, "diry:%s\n", node->name);
+    indent_line(out, layer);
+    fprintf(out, "{\n");
+    
+    for (int i = 0; i < node->dir.children.length; i++)
+    {
+        struct VNode *child = node->dir.children.arr[i];
+
+        switch (child->type)
+        {
+        case OBJ_DIRECTORY:
+            print_dir_node(out, child, layer + 1);
+            break;
+        
+        case OBJ_FILE:
+            print_file_node(out, child, layer + 1);
+            break;
+        
+        default:
+            THROW("Invalid object type.");
+        }
+    }
+
+    indent_line(out, layer);
+    fprintf(out, "}\n");
+}
+
+void print_file_node(FILE *out, struct VNode *node, int layer)
+{
+    if (node->type != OBJ_FILE)
+    {
+        printf("Not a directory\n");
+        return;
+    }
+
+    indent_line(out, layer);
+    fprintf(out, "file:%s\n", node->name);
+    indent_line(out, layer + 1);
+    fputc('\"', out);
+
+    if (node->file.nlines > 0)
+    {
+        fprintf(out, "%s\n", node->file.lines[0].arr);
+
+        for (int i = 1; i < node->file.nlines; i++)
+        {
+            indent_line(out, layer + 1);
+            fprintf(out, "%s\n", node->file.lines[i].arr);
+        }
+    }
+
+    fseek(out, -1L, SEEK_CUR);
+    fputs("\"\n", out);
 }
