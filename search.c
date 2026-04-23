@@ -2,20 +2,26 @@
 
 DEF_ARRAY_LIST_SOURCE(char*, CharPtr, char_ptr);
 
-void get_all_paths_search(FILE *file, const char *search_term)
+ArrayListString get_all_paths_search(FILE *file, const char *search_term)
 {
-	ArrayListCharPtr paths;
-	init_arr_list_char_ptr(&paths);
+	ArrayListString paths;
+	init_arr_list_str(&paths);
 
-	search_ez_file(file, search_term, 0, &paths, "");
+	ArrayListChar path_builder;
+	init_arr_list_ch(&path_builder);
+
+	search_ez_file(file, search_term, 0, &paths, &path_builder);
 
 	for (int i = 0; i < paths.length; i++)
 	{
-		printf("%s\n", paths.arr[i]);
+		printf("%s\n", paths.arr[i].arr);
 	}
+
+	free(path_builder.arr);
+	return paths;
 }
 
-void search_ez_file(FILE *file, const char *search_term, int layer, ArrayListCharPtr *paths, const char *current_path)
+void search_ez_file(FILE *file, const char *search_term, int layer, ArrayListString *paths, ArrayListChar *current_path)
 {
 	char obj_name[MAX_FILE_NAME_SIZE];
 
@@ -31,25 +37,37 @@ void search_ez_file(FILE *file, const char *search_term, int layer, ArrayListCha
 
         JCALL(enum EZObjectType obj_type = scan_header(file, MAX_FILE_NAME_SIZE, obj_name));
 
-        char *new_path = malloc(strlen(current_path) + strlen(obj_name) + 2);
-        strcpy(new_path, current_path);
-        if (strlen(current_path) > 0) strcat(new_path, "/");
-        strcat(new_path, obj_name);
+        // append current object to current_path
+        int saved_len = current_path->length;
+        if (current_path->length > 0) push_arr_list_ch(current_path, '/');
+        for (int i = 0; obj_name[i] != '\0'; i++)
+		{
+		    push_arr_list_ch(current_path, obj_name[i]);
+		}
 
         switch (obj_type)
         {
             case OBJ_DIRECTORY:
             	skip_to_char(file, '{');
     			fgetc(file);
-    			char *recurse_path = strdup(new_path);
+    			//char *recurse_path = strdup(new_path);
                 if (star_compare(search_term, obj_name)) 
                 {
-                	push_arr_list_char_ptr(paths, new_path);
-					new_path = NULL;
+                	// add null terminator for char* in paths
+                	push_arr_list_ch(current_path, '\0');
+
+                	// make a copy of current_path so we don't modify the value in the string array in other stack frames
+                	ArrayListChar copy;
+                    init_arr_list_ch(&copy);
+                    for (int i = 0; i < current_path->length; i++)
+                    {
+                        push_arr_list_ch(&copy, current_path->arr[i]);
+                    }
+                    push_arr_list_str(paths, copy);
+                    pop_arr_list_ch(current_path);
                 }
 
-                search_ez_file(file, search_term, layer + 1, paths, recurse_path);
-                free(recurse_path);
+                search_ez_file(file, search_term, layer + 1, paths, current_path);
                 break;
             case OBJ_FILE:
             	skip_to_char(file, '\"');
@@ -57,11 +75,21 @@ void search_ez_file(FILE *file, const char *search_term, int layer, ArrayListCha
 			    fgetc(file);
                 if (star_compare(search_term, obj_name))
                 {
-                	push_arr_list_char_ptr(paths, new_path);
-                	new_path = NULL;
+                	// add null terminator for char* in paths
+                	push_arr_list_ch(current_path, '\0');
+
+                	// make a copy of current_path so we don't modify the value in the string array in other stack frames
+                	ArrayListChar copy;
+                    init_arr_list_ch(&copy);
+                    for (int i = 0; i < current_path->length; i++)
+                    {
+                        push_arr_list_ch(&copy, current_path->arr[i]);
+                    }
+                    push_arr_list_str(paths, copy);
+                    pop_arr_list_ch(current_path);
                 }
                 break;
         }
-        if (new_path) free(new_path);
+        current_path->length = saved_len;
     }
 }
