@@ -2,6 +2,34 @@
 
 DEF_ARRAY_LIST_SOURCE(char*, CharPtr, char_ptr);
 
+ArrayListVNodePtr get_matching_nodes_search(VNode *root, const char *search_term)
+{
+    ArrayListVNodePtr nodes;
+    init_arr_list_vnode_ptr(&nodes);
+
+    find_nodes(root, search_term, &nodes);
+
+    return nodes;
+}
+
+void find_nodes(VNode *node, const char *search_term, ArrayListVNodePtr *nodes)
+{
+    // if we find a match, add it to the list
+    if (star_compare(search_term, node->name))
+    {
+        push_arr_list_vnode_ptr(nodes, node);
+    }
+
+    if (node->type == OBJ_DIRECTORY)
+    {
+        // recursively search all objects in directory
+        for (int i = 0; i < node->dir.children.length; i++)
+        {
+            find_nodes(node->dir.children.arr[i], search_term, nodes);
+        }
+    }
+}
+
 ArrayListString get_all_paths_search(VNode *root, const char *search_term)
 {
 	ArrayListString paths;
@@ -10,13 +38,13 @@ ArrayListString get_all_paths_search(VNode *root, const char *search_term)
 	ArrayListChar path_builder;
 	init_arr_list_ch(&path_builder);
 
-	search_ez_file(file, search_term, 0, &paths, &path_builder);
+	find_paths(root, search_term, &paths, &path_builder);
 
 	free(path_builder.arr);
 	return paths;
 }
 
-void search_ez_file(VNode *node, const char *search_term, ArrayListString *paths, ArrayListChar *current_path)
+void find_paths(VNode *node, const char *search_term, ArrayListString *paths, ArrayListChar *current_path)
 {
 	int saved_len = current_path->length;
 
@@ -45,10 +73,10 @@ void search_ez_file(VNode *node, const char *search_term, ArrayListString *paths
 
     if (node->type == OBJ_DIRECTORY)
     {
-        // recursively search all objects in directoruy
-        for (int i = 0; i < node->dir.children.length i++)
+        // recursively search all objects in directory
+        for (int i = 0; i < node->dir.children.length; i++)
         {
-            search_vnode(node->dir.children.arr[i], search_term, paths, current_path);
+            find_paths(node->dir.children.arr[i], search_term, paths, current_path);
         }
     }
 
