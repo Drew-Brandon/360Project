@@ -7,5 +7,5 @@
 
 DEF_ARRAY_LIST_HEADER(char*, CharPtr, char_ptr);
 
-ArrayListString get_all_paths_search(FILE *file, const char *search_term);
-void search_ez_file(FILE *file, const char *search_term, int layer, ArrayListString *paths, ArrayListChar *current_path);
+ArrayListString get_all_paths_search(VNode *root, const char *search_term);
+void search_ez_file(VNode *node, const char *search_term, ArrayListString *paths, ArrayListChar *current_path);
