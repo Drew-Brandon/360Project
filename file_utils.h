@@ -76,4 +76,27 @@ enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name);
 /// @brief Frees up the specified EZFile structure.
 /// @param file The structure to free.
 void free_ez_file(EZFile *file);
+// VFS tree building
+struct VNode;  // forward declaration
+
+/// @brief Builds a VFS tree from a .ez file.
+/// @param in The file to build the tree from.
+/// @return The root of the built tree.
+struct VNode *build_ez_tree(FILE *in);
+
+/// @brief Scans a directory node and its children from a .ez file.
+/// @param in The file to scan the node from.
+/// @param name The name of the directory.
+/// @param parent The parent of the directory. Can be NULL if this is the root directory.
+/// @return The scanned directory node.
+struct VNode *scan_dir_node(FILE *in, char *name, struct VNode *parent);
+
+/// @brief Scans a file node from a .ez file.
+/// @param in The file to scan the node from.
+/// @param name The name of the file.
+/// @param parent The parent of the file. Can be NULL if this is the root directory
+/// @return The scanned file node.
+struct VNode *scan_file_node(FILE *in, char *name, struct VNode *parent);
+
+
 #endif
