@@ -1,36 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "journaling.h"
 #include "file_utils.h"
 #include "vfs.h"
 
 int main(int argc, char *argv[])
 {
-    init_journaling();
+    char *fname = "";
+    FILE *in = fopen(fname, "r");
 
-    const char *filename = "example_files/foo.txt";
-
+    // Open the specified input file if there is one and use it as a base for the file system.
     if (argc > 1)
     {
-        filename = argv[1];
+        fname = argv[1];
+        in = fopen(fname, "r");
+
+        if (!in)
+        {
+            perror("Failed to open file");
+            return 1;
+        }
+
+        printf("Loading EZ file: %s\n", fname);
     }
 
-    FILE *in = fopen(filename, "r");
-    if (!in)
-    {
-        perror("Failed to open input file");
-        free_journaling();
-        return 1;
-    }
-
-    printf("Loading EZ file: %s\n", filename);
-
+    init_journaling();
     VNode *root = NULL;
 
     TRY(
     {
-        root = build_ez_tree(in);
+        /* 
+         * If an input file was specified, then construct the virtual system from it.
+         * Otherwise, just create a new virtual system.
+         */
+        if (in == NULL)
+        {
+            printf("Specify a name for the root directory\n");
+            char root_name[MAX_OBJ_NAME_SIZE];
+            fgets(root_name, sizeof(root_name), stdin);
+            root = create_dir(root_name, NULL);
+        }
+        else
+        {
+            JCALL(root = build_ez_tree(in));
+        }
 
         VFS vfs;
         vfs.root = root;
@@ -38,7 +51,6 @@ int main(int argc, char *argv[])
 
         printf("EZ file loaded successfully.\n");
         printf("Entering virtual file system...\n\n");
-
         run_shell(&vfs);
     },
     {
@@ -56,8 +68,13 @@ int main(int argc, char *argv[])
         free_vnode(root);
     }
 
-    fclose(in);
     free_journaling();
+
+    if (fclose(in))
+    {
+        perror("Failed to properly close file");
+        return 1;
+    }
 
     printf("Program terminated.\n");
     return 0;
