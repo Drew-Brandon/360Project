@@ -10,30 +10,19 @@
 /// @brief The tag that is used to represent an object being a file in a .ez file.
 #define FILE_TAG "file"
 
-#define MAX_FILE_NAME_SIZE 256
-#define MAX_LINE_SIZE 512
-#define MAX_CH_COUNT (sizeof(char) * 8) << 1
-#define MAX_CH_COUNT_BYTES MAX_CH_COUNT / 8
+/// @brief The maximum size a file name can be.
+#define MAX_OBJ_NAME_SIZE 256
 
 DEF_ARRAY_LIST_HEADER(char, Char, ch)
-
 DEF_ARRAY_LIST_HEADER(ArrayListChar, String, str)
 
 /// @brief An enum representing the types that an object can be in a .ez file.
 enum EZObjectType
 {
     OBJ_NONE = 0,
-    OBJ_DIRECTORY = 1,
-    OBJ_FILE = 2
+    OBJ_FILE = 1,
+    OBJ_DIRECTORY = 2,
 };
-
-/// @brief Stores the name, line count, and lines of a file.
-typedef struct
-{
-    int nlines;
-    char *name;
-    char **lines;
-} EZFile;
 
 /// @brief Indents a line by a certain amount with tabs.
 /// @param ez_file The file to indent within.
@@ -73,7 +62,45 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer);
 /// @return The type of object that was scanned.
 enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name);
 
-/// @brief Frees up the specified EZFile structure.
-/// @param file The structure to free.
-void free_ez_file(EZFile *file);
+// VFS tree building
+struct VNode;  // forward declaration
+
+/// @brief Uploads the specified file to the system.
+/// @param in The file to upload.
+/// @param fname The name of the file to upload.
+/// @param parent The parent directory to upload the file to.
+/// @return The node created for the file.
+struct VNode *upload_file(FILE *in, const char *fname, struct VNode *parent);
+
+/// @brief Builds a VFS tree from a .ez file.
+/// @param in The file to build the tree from.
+/// @return The root of the built tree.
+struct VNode *build_ez_tree(FILE *in);
+
+/// @brief Scans a directory node and its children from a .ez file.
+/// @param in The file to scan the node from.
+/// @param name The name of the directory.
+/// @param parent The parent of the directory. Can be NULL if this is the root directory.
+/// @return The scanned directory node.
+struct VNode *scan_dir_node(FILE *in, char *name, struct VNode *parent, int layer);
+
+/// @brief Scans a file node from a .ez file.
+/// @param in The file to scan the node from.
+/// @param name The name of the file.
+/// @param parent The parent of the file. Can be NULL if this is the root directory
+/// @return The scanned file node.
+struct VNode *scan_file_node(FILE *in, char *name, struct VNode *parent, int layer);
+
+/// @brief Prints out the specified directory node to the specified file.
+/// @param out The file to print to.
+/// @param node The node to print out.
+/// @param layer The layer of indentation to apply to the printing.
+void print_dir_node(FILE *out, struct VNode *node, int layer);
+
+/// @brief Prints out the specified file node to the specified file.
+/// @param out The file to print to.
+/// @param node The node to print out.
+/// @param layer The layer of indentation to apply to the printing.
+void print_file_node(FILE *out, struct VNode *node, int layer);
+
 #endif

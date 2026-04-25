@@ -1,6 +1,7 @@
 #ifndef ARRAY_LIST_H
 #define ARRAY_LIST_H
 #include <stdlib.h>
+#include "boolean.h"
 #define MIN_CAPACITY 8
 
 /// @brief Defines the structure for an array list of the specified type.
@@ -122,6 +123,5 @@ void pack_arr_list_##snake_name(ArrayList##pascal_name *list) \
 /// @param snake_name The snake case name to append to the functions.
 #define DEF_ARRAY_LIST_FULL(type, pascal_name, snake_name) \
 DEF_ARRAY_LIST_TYPE(type, pascal_name) \
-DEF_ARRAY_LIST_SOURCE(type, pascal_name, snake_name) \
-
+DEF_ARRAY_LIST_SOURCE(type, pascal_name, snake_name)
 #endif

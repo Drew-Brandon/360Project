@@ -1,0 +1,20 @@
+diry:bar
+{
+	diry:subdir
+	{
+		diry:subdir2
+		{
+			file:gum.txt
+				"MMMMMMMMMMMMMMMMMMMMMMM GUM"
+		}
+		file:dog.txt
+			"Imma dog, bark bark!"
+	}
+	file:bar.txt
+		"foo
+		bar
+		woop"
+	foo:foo.txt
+		"BARS
+		"
+}
