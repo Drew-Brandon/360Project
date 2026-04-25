@@ -14,4 +14,7 @@ diry:bar
 		"foo
 		bar
 		woop"
+	foo:foo.txt
+		"BARS
+		"
 }

@@ -38,7 +38,7 @@ boolean insert_dir_into_dir(VNode *dir, VNode *parent)
 
     if (result.found)
     {
-        printf("Cannot insert the directory of the name \"%s\" into the directory named \"%s\" as that directory already exists within it", dir->name, parent->name);
+        printf("Cannot insert the directory of the name \"%s\" into the directory named \"%s\" as that directory already exists within it\n", dir->name, parent->name);
         return TRUE;
     }
 
@@ -52,7 +52,7 @@ boolean insert_file_into_dir(VNode *file, VNode *parent)
     
     if (result.found)
     {
-        printf("Cannot insert the file of the name \"%s\" into the directory named \"%s\" as that file already exists within it", file->name, parent->name);
+        printf("Cannot insert the file of the name \"%s\" into the directory named \"%s\" as that file already exists within it\n", file->name, parent->name);
         return TRUE;
     }
 
@@ -252,7 +252,7 @@ void cmd_upload(VNode *parent, const char *fname)
 
     VNode *node = upload_file(file, fname, parent);
     fclose(file);
-    insert_file_into_dir(parent, node);
+    insert_file_into_dir(node, parent);
 }
 
 void cmd_upload_dir(VNode *parent, const char *fname)
@@ -266,7 +266,7 @@ void cmd_upload_dir(VNode *parent, const char *fname)
 
     VNode *node = upload_file(file, fname, parent);
     fclose(file);
-    insert_dir_into_dir(parent, node);
+    insert_dir_into_dir(node, parent);
 }
 
 /// @brief Creates the directory and attaches it to the specified parent.
@@ -275,7 +275,7 @@ void cmd_upload_dir(VNode *parent, const char *fname)
 void cmd_mkdir(VNode *parent, const char *dir_name)
 {
     VNode *node = create_dir(dir_name, parent);
-    insert_dir_into_dir(parent, node);
+    insert_dir_into_dir(node, parent);
 }
 
 /// @brief Removes the specified file from the system.
