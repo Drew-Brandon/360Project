@@ -1,7 +1,5 @@
 #include "search.h"
 
-DEF_ARRAY_LIST_SOURCE(char*, CharPtr, char_ptr);
-
 ArrayListVNodePtr get_matching_nodes_search(VNode *root, const char *search_term)
 {
     ArrayListVNodePtr nodes;

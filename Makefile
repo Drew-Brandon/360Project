@@ -11,7 +11,7 @@ TARGET = ./ez_filez.out
 TARGET_DEL = ./ez_filez.out
 
 # Source filesc
-SRCS = ./ez_filez_main.c ./journaling.c ./file_utils.c ./search.c ./star_compare.c
+SRCS = ./main.c ./journaling.c ./file_utils.c ./search.c ./star_compare.c ./vfs.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)

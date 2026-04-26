@@ -6,6 +6,7 @@
 typedef struct VNode VNode;
 
 DEF_ARRAY_LIST_HEADER(VNode*, VNodePtr, vnode_ptr)
+DEF_ARRAY_LIST_HEADER(char*, CharPtr, ch_ptr)
 
 struct VNode
 {
@@ -27,6 +28,11 @@ struct VNode
         } dir;
     };
 };
+
+typedef struct 
+{
+    ArrayListCharPtr commands;
+} History;
 
 typedef struct
 {

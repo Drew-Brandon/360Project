@@ -6,6 +6,7 @@
 #include "boolean.h"
 
 DEF_ARRAY_LIST_SOURCE(VNode*, VNodePtr, vnode_ptr)
+DEF_ARRAY_LIST_SOURCE(char*, CharPtr, ch_ptr)
 
 VNode *create_dir(char *name, VNode *parent)
 {
@@ -136,6 +137,8 @@ void print_path(VNode *node)
 void run_shell(VFS *vfs)
 {
     char input[128];
+    History history;
+    init_arr_list_ch_ptr(&history.commands);
 
     while (TRUE)
     {
@@ -146,34 +149,100 @@ void run_shell(VFS *vfs)
 
         if (!cmd) continue;
 
-        if (strcmp(cmd, "ls") == 0)
+        if (!execute_cmd(vfs, cmd, &history, 1)) break;
+    }
+}
+
+int execute_cmd(VFS *vfs, char *cmd, History *history, int add_history)
+{
+    if (strcmp(cmd, "ls") == 0)
         {
             cmd_ls(vfs->cwd);
+            if (add_history) insert_at_arr_list_ch_ptr(&history->commands, 0, strdup(cmd));
         }
         else if (strcmp(cmd, "cd") == 0)
         {
             char *arg = strtok(NULL, " \n");
-            if (arg) cmd_cd(vfs, arg);
+            if (arg) 
+            {
+                if (add_history) 
+                {
+                    char *concat = malloc(strlen(cmd) + strlen(arg) + 2);
+                    sprintf(concat, "%s %s", cmd, arg);
+                    insert_at_arr_list_ch_ptr(&history->commands, 0, strdup(concat));
+                    free(concat);
+                }
+
+                cmd_cd(vfs, arg);
+            }
         }
         else if (strcmp(cmd, "cat") == 0)
         {
             char *arg = strtok(NULL, " \n");
-            if (arg) cmd_cat(vfs->cwd, arg);
+            if (arg) 
+            {
+                if (add_history) 
+                {
+                    char *concat = malloc(strlen(cmd) + strlen(arg) + 2);
+                    sprintf(concat, "%s %s", cmd, arg);
+                    insert_at_arr_list_ch_ptr(&history->commands, 0, strdup(concat));
+                    free(concat);
+                }
+
+                cmd_cat(vfs->cwd, arg);
+            }
         }
         else if (strcmp(cmd, "pwd") == 0)
         {
             print_path(vfs->cwd);
             printf("\n");
+            if (add_history) insert_at_arr_list_ch_ptr(&history->commands, 0, strdup(cmd));
+        }
+        else if (strcmp(cmd, "history") == 0 || strcmp(cmd, "hs") == 0)
+        {
+            char *arg = strtok(NULL, " \n");
+            if (arg)
+            {
+                // attempt to re-process selected history
+                run_prev_cmd(vfs, history, arg);
+            }
+            else
+            {
+                for (int i = history->commands.length - 1; i >= 0; i--)
+                {
+                    printf("%d: %s \n", i + 1, history->commands.arr[i]);
+                }
+            }
         }
         else if (strcmp(cmd, "exit") == 0)
         {
-            break;
+            return 0;
         }
         else
         {
             printf("Unknown command\n");
         }
-    }
+
+        if (history->commands.length > 10)
+        {
+            pop_arr_list_ch_ptr(&history->commands);
+        }
+
+        return 1;
+}
+
+void run_prev_cmd(VFS *vfs, History *history, char *command_num)
+{
+    char *end;
+    int x = (int)strtol(command_num, &end, 10);
+
+    if (*end != '\0') return;
+    if (x < 1 || x > history->commands.length) return;
+
+    char *input = strdup(history->commands.arr[x - 1]);
+    char *cmd = strtok(input, " \t\n");
+
+    execute_cmd(vfs, cmd, history, 0);
 }
 
 void free_vnode(VNode *node)
