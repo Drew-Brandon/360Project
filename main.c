@@ -1,48 +1,47 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "journaling.h"
 #include "file_utils.h"
 #include "vfs.h"
 
+FILE *open_ez_file(char *fname);
+
 int main(int argc, char *argv[])
 {
-    char *fname = "";
-    FILE *in = fopen(fname, "r");
-
-    // Open the specified input file if there is one and use it as a base for the file system.
-    if (argc > 1)
-    {
-        fname = argv[1];
-        in = fopen(fname, "r");
-
-        if (!in)
-        {
-            perror("Failed to open file");
-            return 1;
-        }
-
-        printf("Loading EZ file: %s\n", fname);
-    }
-
-    init_journaling();
+    int return_code = 0;
+    char *in_name = NULL;
+    FILE *in = NULL;
     VNode *root = NULL;
+    init_journaling();
 
     TRY(
     {
+        // Open the specified input file if there is one and use it as a base for the file system.
+        if (argc > 1)
+        {
+            JCALL(in = open_ez_file(argv[1]));
+        }
+
         /* 
          * If an input file was specified, then construct the virtual system from it.
          * Otherwise, just create a new virtual system.
          */
-        if (in == NULL)
+        if (in)
         {
-            printf("Specify a name for the root directory\n");
-            char root_name[MAX_OBJ_NAME_SIZE];
-            fgets(root_name, sizeof(root_name), stdin);
-            root = create_dir(root_name, NULL);
+            JCALL(root = build_ez_tree(in));
         }
         else
         {
-            JCALL(root = build_ez_tree(in));
+            printf("Specify a name for the root directory\n");
+
+            while (!root)
+            {
+                char input[MAX_OBJ_NAME_SIZE + 1];
+                fgets(input, sizeof(input), stdin);
+                char *root_name = strtok(input, "\n");
+                root = create_dir(root_name, NULL);
+            }
         }
 
         VFS vfs;
@@ -52,15 +51,24 @@ int main(int argc, char *argv[])
         printf("EZ file loaded successfully.\n");
         printf("Entering virtual file system...\n\n");
         run_shell(&vfs);
+
+        if (in && fclose(in))
+        {
+            THROW_FMT("Failed to properly close file \"%s\"", in_name);
+        }
+
+        return_code = 0;
     },
     {
         printf("Exception occurred:\n");
         print_exc_msg();
         printf("\n");
-
+        
         printf("Trace:\n");
         print_exc_path();
         printf("\n");
+
+        return_code = 1;
     });
 
     if (root != NULL)
@@ -69,13 +77,19 @@ int main(int argc, char *argv[])
     }
 
     free_journaling();
+    printf("Program terminated.\n");
+    return return_code;
+}
 
-    if (fclose(in))
+FILE *open_ez_file(char *fname)
+{
+    FILE *file = fopen(fname, "r");
+
+    if (!file)
     {
-        perror("Failed to properly close file");
-        return 1;
+        THROW_FMT("Failed to open file \"%s\"", fname);
     }
 
-    printf("Program terminated.\n");
-    return 0;
+    printf("Loading EZ file: %s\n", fname);
+    return file;
 }

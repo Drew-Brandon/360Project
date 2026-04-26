@@ -27,7 +27,8 @@ void push_arr_list_##snake_name(ArrayList##pascal_name *list, type val); \
 void push_null_arr_list_##snake_name(ArrayList##pascal_name *list); \
 void insert_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index, type val); \
 void pop_arr_list_##snake_name(ArrayList##pascal_name *list); \
-void remove_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index);
+void remove_at_arr_list_##snake_name(ArrayList##pascal_name *list, int index); \
+void pack_arr_list_##snake_name(ArrayList##pascal_name *list);
 
 /// @brief Defines only the source code for an array. This should be used in source code files.
 // Note that the list's structure is not defined in this function.

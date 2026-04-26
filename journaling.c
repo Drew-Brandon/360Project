@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
 #include "journaling.h"
 
 DEF_ARRAY_LIST_SOURCE(LineDest, LineDest, line_dest)
@@ -8,6 +7,11 @@ DEF_ARRAY_LIST_SOURCE(JData, JData, j_data)
 
 static char exc_msg[MAX_EXC_MSG_SIZE];
 static ArrayListJData j_data_list;
+
+char *_get_exc_msg()
+{
+    return exc_msg;
+}
 
 void _push_line_dest(const int line, char *file)
 {
@@ -55,7 +59,12 @@ void _throw(const char *new_exc_msg)
     longjmp(j_data_list.arr[j_data_list.length - 1].buf, 1);
 }
 
-void _throw_fmt(const char *new_exc_msg, ...)
+void _throw_null()
+{
+    longjmp(j_data_list.arr[j_data_list.length - 1].buf, 1);
+}
+
+/*void _throw_fmt(const char *new_exc_msg, ...)
 {
     va_list args;
 
@@ -64,7 +73,7 @@ void _throw_fmt(const char *new_exc_msg, ...)
     va_end(args);
 
     longjmp(j_data_list.arr[j_data_list.length - 1].buf, 1);
-}
+}*/
 
 void init_journaling(void)
 {

@@ -4,14 +4,7 @@ diry:bar
 		"foo
 		bar
 		woop"
-	diry:mydir
-	{
-		diry:mydir2
-		{
-			file:myfile.txt
-				"This is my file"
-		}
-		file:foo.txt
-			"help"
-	}
+	file:foo.txt
+		"BARS
+		"
 }
