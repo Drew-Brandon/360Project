@@ -694,6 +694,11 @@ void cmd_cp(VNode *start, char *from, char *to)
     free_str_list(&to_tokens);
 }
 
+// Forward declaration.
+/// @brief Runs a previous command.
+/// @param vfs The file system being worked in.
+/// @param history The history of commands to refer to.
+/// @param command_num The index of the command to run in history.
 void run_prev_cmd(VFS *vfs, ArrayListString *history, char *command_num);
 
 /// @brief Executes the specified command.
