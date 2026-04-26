@@ -1,8 +1,9 @@
 #ifndef _JOURNALING_H_
 #define _JOURNALING_H_
 #include <setjmp.h>
+#include <string.h>
 #include "array_list.h"
-#define MAX_EXC_MSG_SIZE 256
+#define MAX_EXC_MSG_SIZE 1024
 
 typedef struct
 {
@@ -19,6 +20,8 @@ typedef struct
 } JData;
 
 DEF_ARRAY_LIST_HEADER(JData, JData, j_data)
+
+char *_get_exc_msg();
 
 /// @brief Pushes the specified line destination to the current journal's list.
 /// @param line The line number of the destination.
@@ -42,10 +45,12 @@ jmp_buf *_jmp_point(void);
 /// @param new_exc_msg The message to use for the exception.
 void _throw(const char *new_exc_msg);
 
+void _throw_null();
+
 /// @brief Throws an exception with the specified formatted message.
 /// @param new_exc_msg The message/format to use for the exception.
 /// @param ... The variables to insert into the message format.
-void _throw_fmt(const char *new_exc_msg, ...);
+// void _throw_fmt(const char *new_exc_msg, ...);
 
 /// @brief Initializes the journaling system for the program.
 void init_journaling(void);
@@ -74,7 +79,8 @@ _throw(exc_msg) \
 /// @param ... The input variables to place into the formatted message.
 #define THROW_FMT(exc_msg, ...) \
 _push_line_dest(__LINE__, __FILE__); \
-_throw_fmt(exc_msg, __VA_ARGS__) \
+snprintf(_get_exc_msg(), MAX_EXC_MSG_SIZE - 1, exc_msg, __VA_ARGS__); \
+_throw_null()
 
 /// @brief A macro meant to journal a function call or code execution by storing the line and file it was stored on.
 /// This location can be later displayed via the print_exc_path() function.

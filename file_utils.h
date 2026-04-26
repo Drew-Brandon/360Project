@@ -1,6 +1,7 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 #include <stdio.h>
+#include "str_utils.h"
 #include "array_list.h"
 #define OBJ_TYPE_SIZE 5
 
@@ -12,9 +13,6 @@
 
 /// @brief The maximum size a file name can be.
 #define MAX_OBJ_NAME_SIZE 256
-
-DEF_ARRAY_LIST_HEADER(char, Char, ch)
-DEF_ARRAY_LIST_HEADER(ArrayListChar, String, str)
 
 /// @brief An enum representing the types that an object can be in a .ez file.
 enum EZObjectType
@@ -53,7 +51,7 @@ void skip_whitespace(FILE *file);
 /// @param ch The character to stop scanning at.
 /// @param layer The layer to scan in. This refers to the amount of tab indents should be present for the text.
 /// @return The lines that were scanned in.
-ArrayListString scan_till_char(FILE *file, char ch, int layer);
+ArrayListLine scan_till_char(FILE *file, char ch, int layer);
 
 /// @brief Scans the header for an object in a .ez file.
 /// @param file The file to scan the header from.

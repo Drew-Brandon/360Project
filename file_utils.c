@@ -6,10 +6,6 @@
 #include "journaling.h"
 #include "vfs.h"
 
-DEF_ARRAY_LIST_SOURCE(char, Char, ch)
-
-DEF_ARRAY_LIST_SOURCE(ArrayListChar, String, str)
-
 void indent_line(FILE *ez_file, int layer)
 {
     for (int i = 0; i < layer; i++)
@@ -65,18 +61,14 @@ void skip_to_char(FILE *file, char ch)
     } while (cur_ch != ch && cur_ch != EOF);
 }
 
-ArrayListString scan_full_file(FILE *file)
+ArrayListLine scan_full_file(FILE *file)
 {
     char cur_ch;
+    ArrayListChar cur_line;
+    ArrayListLine lines;
 
-    ArrayListChar *cur_line;
-    ArrayListString lines;
-
-    init_arr_list_str(&lines);
-    push_null_arr_list_str(&lines);
-
-    cur_line = &lines.arr[lines.length - 1];
-    init_arr_list_ch(cur_line);
+    init_arr_list_line(&lines);
+    init_arr_list_ch(&cur_line);
 
     while (TRUE)
     {
@@ -85,43 +77,38 @@ ArrayListString scan_full_file(FILE *file)
         // Newline handling
         if (cur_ch == '\n')
         {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            push_null_arr_list_str(&lines);
-            cur_line = &lines.arr[lines.length - 1];
-            init_arr_list_ch(cur_line);
+            push_arr_list_ch(&cur_line, '\0');
+            pack_arr_list_ch(&cur_line);
+            push_arr_list_line(&lines, (Line){cur_line.length, cur_line.arr});
+            init_arr_list_ch(&cur_line);
             continue;
         }
 
         if (cur_ch == EOF)
         {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            pack_arr_list_str(&lines);
+            push_arr_list_ch(&cur_line, '\0');
+            pack_arr_list_ch(&cur_line);
+            push_arr_list_line(&lines, (Line){cur_line.length, cur_line.arr});
+            pack_arr_list_line(&lines);
             return lines;
         }
 
         // Normal character
-        push_arr_list_ch(cur_line, cur_ch);
+        push_arr_list_ch(&cur_line, cur_ch);
     }
 }
 
-ArrayListString scan_till_char(FILE *file, char ch, int layer)
+ArrayListLine scan_till_char(FILE *file, char ch, int layer)
 {
-    unsigned int cur_layer = 0;   // start at 0
-    unsigned int space_count = 0;
+    int cur_layer = 0;   // start at 0
+    int space_count = 0;
     char cur_ch;
 
-    ArrayListChar *cur_line;
-    ArrayListString lines;
+    ArrayListChar cur_line;
+    ArrayListLine lines;
 
-    init_arr_list_str(&lines);
-    push_null_arr_list_str(&lines);
-
-    cur_line = &lines.arr[lines.length - 1];
-    init_arr_list_ch(cur_line);
+    init_arr_list_line(&lines);
+    init_arr_list_ch(&cur_line);
 
     while (TRUE)
     {
@@ -130,10 +117,14 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
         // Handle EOF
         if (cur_ch == EOF)
         {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
+            for (int i = 0; i < lines.length; i++)
+            {
+                free(lines.arr[i].str);
+            }
 
-            THROW_FMT("The string \"%s\" has reached the end of the file.", cur_line->arr);
+            free(lines.arr);
+            free(cur_line.arr);
+            THROW("Reached end of file while scanning");
         }
 
         // Handle indentation BEFORE processing character
@@ -169,28 +160,25 @@ ArrayListString scan_till_char(FILE *file, char ch, int layer)
             cur_layer = 0;
             space_count = 0;
 
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            push_null_arr_list_str(&lines);
-            cur_line = &lines.arr[lines.length - 1];
-            init_arr_list_ch(cur_line);
-
+            push_arr_list_ch(&cur_line, '\0');
+            pack_arr_list_ch(&cur_line);
+            push_arr_list_line(&lines, (Line){cur_line.length, cur_line.arr});
+            init_arr_list_ch(&cur_line);
             continue;
         }
 
         // End condition
         if (cur_ch == ch)
         {
-            push_arr_list_ch(cur_line, '\0');
-            pack_arr_list_ch(cur_line);
-
-            pack_arr_list_str(&lines);
+            push_arr_list_ch(&cur_line, '\0');
+            pack_arr_list_ch(&cur_line);
+            push_arr_list_line(&lines, (Line){cur_line.length, cur_line.arr});
+            pack_arr_list_line(&lines);
             return lines;
         }
 
         // Normal character
-        push_arr_list_ch(cur_line, cur_ch);
+        push_arr_list_ch(&cur_line, cur_ch);
     }
 }
 
@@ -210,7 +198,7 @@ enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name)
     }
     else
     {
-        THROW_FMT("Object type \"%s\" does not exist.", obj_type);
+        THROW_FMT("Object type \"%s\" does not exist.", obj_type_str);
     }
 
     JCALL(skip_to_char(file, ':'));
@@ -222,7 +210,13 @@ enum EZObjectType scan_header(FILE *file, int obj_name_size, char *obj_name)
 VNode *upload_file(FILE *in, const char *fname, VNode *parent)
 {
     VNode *file = create_file(fname, parent);
-    ArrayListString lines = scan_full_file(in);
+
+    if (!file)
+    {
+        return NULL;
+    }
+
+    ArrayListLine lines = scan_full_file(in);
     file->file.lines = lines.arr;
     file->file.nlines = lines.length;
     return file;
@@ -246,12 +240,17 @@ VNode *scan_dir_node(FILE *in, char *dname, VNode *parent, int layer)
 {
     VNode *dir = create_dir(dname, parent);
 
+    if (!dir)
+    {
+        return NULL;
+    }
+
     // Move to '{'
     JCALL(skip_to_char(in, '{'));
     fgetc(in); // consume '{'
 
     char obj_name[MAX_OBJ_NAME_SIZE];
-
+    
     while (TRUE)
     {
         skip_whitespace(in);
@@ -267,25 +266,16 @@ VNode *scan_dir_node(FILE *in, char *dname, VNode *parent, int layer)
         // Read object header
         JCALL(enum EZObjectType obj_type =
             scan_header(in, MAX_OBJ_NAME_SIZE, obj_name));
-
-        VNode *child = NULL;
         
         // Scan the object in the correct manner.
         switch (obj_type)
         {
         case OBJ_DIRECTORY:
-            JCALL(child = scan_dir_node(in, obj_name, dir, layer + 1));
-
-            if (!insert_dir_into_dir(child, dir))
-            {
-                dir->dir.dir_count++;
-            }
-
+            JCALL(scan_dir_node(in, obj_name, dir, layer + 1));
             break;
 
         case OBJ_FILE:
-            JCALL(child = scan_file_node(in, obj_name, dir, layer + 1));
-            insert_file_into_dir(child, dir);
+            JCALL(scan_file_node(in, obj_name, dir, layer + 1));
             break;
 
         default:
@@ -300,10 +290,15 @@ VNode *scan_file_node(FILE *in, char *fname, VNode *parent, int layer)
 {
     VNode *file = create_file(fname, parent);
 
+    if (!file)
+    {
+        return NULL;
+    }
+
     // Move to opening quote
     skip_to_char(in, '\"');  // already consumes the quote
 
-    JCALL(ArrayListString lines =
+    JCALL(ArrayListLine lines =
         scan_till_char(in, '\"', layer + 1));
 
     file->file.lines = lines.arr;
@@ -368,12 +363,12 @@ void print_file_node(FILE *out, struct VNode *node, int layer)
     // Print the file's contents.
     if (node->file.nlines > 0)
     {
-        fprintf(out, "%s\n", node->file.lines[0].arr);
+        fprintf(out, "%s\n", node->file.lines[0].str);
 
         for (int i = 1; i < node->file.nlines; i++)
         {
             indent_line(out, layer + 1);
-            fprintf(out, "%s\n", node->file.lines[i].arr);
+            fprintf(out, "%s\n", node->file.lines[i].str);
         }
     }
 
