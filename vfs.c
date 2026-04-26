@@ -5,6 +5,7 @@
 #include "vfs.h"
 #include "journaling.h"
 #include "boolean.h"
+#define MAX_INPUT_SIZE 256
 
 DEF_ARRAY_LIST_SOURCE(VNode *, VNodePtr, vnode_ptr)
 DEF_BINARY_SEARCH_SOURCE(VNode *, VNode *, vnode_ptr)
@@ -298,13 +299,6 @@ void list_node(int index, VNode *node)
 /// @param path The path containing the directory to list alongside the search term.
 void cmd_ls(VNode *start, char *path)
 {
-    // Make sure the cwd is a directory.
-    if (start->type != OBJ_DIRECTORY)
-    {
-        printf("Not a directory\n");
-        return;
-    }
-
     // Go to the directory pointed to by the path.
     ArrayListString tokens = split_str(path, '/');
     VNode *dest = go_to_dir(start, tokens.arr, tokens.length - 1);
@@ -322,9 +316,6 @@ void cmd_ls(VNode *start, char *path)
 /// @param path The path to the new working directory.
 void cmd_cd(VFS *vfs, char *path)
 {
-    // Make sure both the file system and path are valid.
-    if (!vfs || !path) return;
-
     // Set the starting point to the root if the first character is a /.
     VNode *start;
 
@@ -418,7 +409,7 @@ void cmd_save(VFS *vfs, const char *save_file)
 
     if (!file)
     {
-        THROW_FMT("Couldn't open file at location \"%s\"", save_file);
+        printf("Couldn't open file at location \"%s\"", save_file);
     }
 
     print_dir_node(file, vfs->root, 0);
@@ -703,109 +694,155 @@ void cmd_cp(VNode *start, char *from, char *to)
     free_str_list(&to_tokens);
 }
 
+void run_prev_cmd(VFS *vfs, ArrayListString *history, char *command_num);
+
+/// @brief Executes the specified command.
+/// @param cmd The command to execute.
+/// @param vfs The file system to execut the command in.
+/// @param history The history of commands to reference to.
+/// @param take_hist Whether or not history should be taken.
+/// @return Whether or not the shell should be exited from.
+boolean execute_cmd(char *cmd, VFS *vfs, ArrayListString *history)
+{
+    if (strcmp(cmd, "ls") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_ls(vfs->cwd, arg);
+        else cmd_ls(vfs->cwd, "./");
+    }
+    else if (strcmp(cmd, "cd") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_cd(vfs, arg);
+    }
+    else if (strcmp(cmd, "cat") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_cat(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "pwd") == 0)
+    {
+        cmd_pwd(vfs->cwd);
+        printf("\n");
+    }
+    else if (strcmp(cmd, "save") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_save(vfs, arg);
+    }
+    else if (strcmp(cmd, "upload") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_upload(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "offload") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_offload(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "mkdir") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_mkdir(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "rm") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_rm(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "rmdir") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+        if (arg) cmd_rmdir(vfs->cwd, arg);
+    }
+    else if (strcmp(cmd, "mv") == 0)
+    {
+        char *arg1 = strtok(NULL, " \n");
+        char *arg2 = strtok(NULL, " \n");
+
+        if (arg1 && arg2) cmd_mv(vfs->cwd, arg1, arg2);
+    }
+    else if (strcmp(cmd, "mvdir") == 0)
+    {
+        char *arg1 = strtok(NULL, " \n");
+        char *arg2 = strtok(NULL, " \n");
+
+        if (arg1 && arg2) cmd_mvdir(vfs->cwd, arg1, arg2);
+    }
+    else if (strcmp(cmd, "cp") == 0)
+    {
+        char *arg1 = strtok(NULL, " \n");
+        char *arg2 = strtok(NULL, " \n");
+
+        if (arg1 && arg2) cmd_cp(vfs->cwd, arg1, arg2);
+    }
+    else if (strcmp(cmd, "history") == 0 || strcmp(cmd, "hs") == 0)
+    {
+        char *arg = strtok(NULL, " \n");
+
+        if (arg)
+        {
+            // attempt to re-process selected history
+            run_prev_cmd(vfs, history, arg);
+        }
+        else
+        {
+            for (int i = 0; i < history->length; i++)
+            {
+                printf("%d: %s \n", i + 1, history->arr[i]);
+            }
+        }
+    }
+    else if (strcmp(cmd, "exit") == 0)
+    {
+        return TRUE;
+    }
+    else
+    {
+        printf("Unknown command\n");
+    }
+
+    return FALSE;
+}
+
+void run_prev_cmd(VFS *vfs, ArrayListString *history, char *command_num)
+{
+    char *end;
+    int x = (int)strtol(command_num, &end, 10);
+
+    if (*end != '\0') return;
+    if (x < 1 || x > history->length) return;
+
+    char *input = strdup(history->arr[x - 1]);
+    char *cmd = strtok(input, " \t\n");
+
+    execute_cmd(cmd, vfs, history);
+}
+
 void run_shell(VFS *vfs)
 {
-    boolean changed = FALSE;
-    char input[128];
+    ArrayListString history;
+    init_arr_list_str(&history);
 
     while (TRUE)
     {
         printf("ezfs> ");
-        fgets(input, sizeof(input), stdin);
+        char input[MAX_INPUT_SIZE];
+        fgets(input, MAX_INPUT_SIZE, stdin);
+        ArrayListChar input_copy = copy_str_till(input, '\n');
+        push_arr_list_str(&history, input_copy.arr);
 
-        char *cmd = strtok(input, " \n");
+        char *cmd = strtok(input, " \t\n");
 
         if (!cmd) continue;
         
-        if (strcmp(cmd, "ls") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_ls(vfs->cwd, arg);
-            else cmd_ls(vfs->cwd, "./");
-        }
-        else if (strcmp(cmd, "cd") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_cd(vfs, arg);
-        }
-        else if (strcmp(cmd, "cat") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_cat(vfs->cwd, arg);
-        }
-        else if (strcmp(cmd, "pwd") == 0)
-        {
-            cmd_pwd(vfs->cwd);
-            printf("\n");
-        }
-        else if (strcmp(cmd, "save") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_save(vfs, arg);
-            changed = FALSE;
-        }
-        else if (strcmp(cmd, "upload") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_upload(vfs->cwd, arg);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "offload") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_offload(vfs->cwd, arg);
-        }
-        else if (strcmp(cmd, "mkdir") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_mkdir(vfs->cwd, arg);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "rm") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_rm(vfs->cwd, arg);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "rmdir") == 0)
-        {
-            char *arg = strtok(NULL, " \n");
-            if (arg) cmd_rmdir(vfs->cwd, arg);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "mv") == 0)
-        {
-            char *arg1 = strtok(NULL, " \n");
-            char *arg2 = strtok(NULL, " \n");
-
-            if (arg1 && arg2) cmd_mv(vfs->cwd, arg1, arg2);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "mvdir") == 0)
-        {
-            char *arg1 = strtok(NULL, " \n");
-            char *arg2 = strtok(NULL, " \n");
-
-            if (arg1 && arg2) cmd_mvdir(vfs->cwd, arg1, arg2);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "cp") == 0)
-        {
-            char *arg1 = strtok(NULL, " \n");
-            char *arg2 = strtok(NULL, " \n");
-
-            if (arg1 && arg2) cmd_cp(vfs->cwd, arg1, arg2);
-            changed = TRUE;
-        }
-        else if (strcmp(cmd, "exit") == 0)
+        if (execute_cmd(cmd, vfs, &history))
         {
             break;
         }
-        else
-        {
-            printf("Unknown command\n");
-        }
     }
+
+    free_str_list(&history);
 }
 
 void free_vnode(VNode *node)

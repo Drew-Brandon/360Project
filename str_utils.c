@@ -15,7 +15,7 @@ void free_str_list(ArrayListString *list)
 	free(list->arr);
 }
 
-int star_compare(const char* search_term, const char* searched_text)
+boolean star_compare(const char* search_term, const char* searched_text)
 {
 	if (*search_term == '*')
 	{
@@ -23,7 +23,7 @@ int star_compare(const char* search_term, const char* searched_text)
 		while (*search_term == '*') search_term++;
 
 		// if * is at the end and previous part of the string is matching, everything else matches
-		if (*search_term == '\0') return 1;
+		if (*search_term == '\0') return TRUE;
 
 		while (*searched_text != '\0')
 		{
@@ -40,7 +40,7 @@ int star_compare(const char* search_term, const char* searched_text)
 		}
 
 		// return false if we reach the end of the searched text without returning true early
-		return 0;
+		return FALSE;
 	}
 
 	// if we are at the end of both strings, they are equal, return true
@@ -85,4 +85,21 @@ ArrayListString split_str(char *str, char delimiter)
 	push_arr_list_str(&tokens, cur_token.arr);
 	pack_arr_list_str(&tokens);
 	return tokens;
+}
+
+ArrayListChar copy_str_till(char *str, char stop)
+{
+	int i = 0;
+	ArrayListChar copy;
+	init_arr_list_ch(&copy);
+
+	while (str[i] && str[i] != stop)
+	{
+		push_arr_list_ch(&copy, str[i]);
+		i++;
+	}
+
+	push_arr_list_ch(&copy, '\0');
+	pack_arr_list_ch(&copy);
+	return copy;
 }
